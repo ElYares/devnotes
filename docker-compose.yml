@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    container_name: devhub_api
+    command: ["yarn", "start:prod"]
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - devhub_net
+
+  db:
+    image: postgres:15
+    container_name: devhub_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: devhub
+      POSTGRES_PASSWORD: devhubpass
+      POSTGRES_DB: devhub_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - devhub_net
+
+volumes:
+  postgres_data:
+
+networks:
+  devhub_net:
+    driver: bridge
