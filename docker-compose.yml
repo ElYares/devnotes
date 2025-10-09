@@ -1,15 +1,5 @@
 services:
-  backend:
-    build: ./backend
-    container_name: devhub_api
-    command: ["yarn", "start:prod"]
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-    networks:
-      - devhub_net
-
+  # 🐘 Servicio de Base de Datos PostgreSQL
   db:
     image: postgres:15
     container_name: devhub_postgres
@@ -20,6 +10,37 @@ services:
       POSTGRES_DB: devhub_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - devhub_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ⚙️ Backend NestJS + Prisma
+  backend:
+    build: ./backend
+    container_name: devhub_api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://devhub:devhubpass@db:5432/devhub_db
+      JWT_SECRET: supersecretkey
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+      echo '⏳ Esperando a que PostgreSQL esté disponible...';
+      until pg_isready -h db -p 5432 -U devhub; do
+        echo '📡 Aún sin conexión con la base de datos...';
+        sleep 2;
+      done;
+      echo '✅ Base de datos lista, iniciando NestJS...';
+      yarn start:prod
+      "
     networks:
       - devhub_net
 
