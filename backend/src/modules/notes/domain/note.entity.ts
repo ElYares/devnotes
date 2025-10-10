@@ -7,6 +7,7 @@ export class Note {
   title: string;
   content: string;
   tags: string[];
+  userId: number; // 👈 agregar esta línea
   createdAt: Date;
   updatedAt: Date;
 

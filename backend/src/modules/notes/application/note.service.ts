@@ -1,33 +1,38 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { NoteRepository } from '../infrastructure/note.repository';
 import { Note } from '../domain/note.entity';
 
-/**
- * Capa de aplicación que contiene la lógica de negocio.
- */
 @Injectable()
 export class NoteService {
   constructor(private readonly repository: NoteRepository) {}
 
-  async getAll(): Promise<Note[]> {
-    return this.repository.findAll();
+  async getAllByUser(userId: number): Promise<Note[]> {
+    return this.repository.findAllByUser(userId);
   }
 
-  async getById(id: number): Promise<Note> {
+  async getById(id: number, userId: number): Promise<Note> {
     const note = await this.repository.findById(id);
     if (!note) throw new NotFoundException(`Nota con id ${id} no encontrada`);
+    if (note.userId !== userId) throw new ForbiddenException('No puedes acceder a esta nota');
     return note;
   }
 
-  async create(data: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
-    return this.repository.create(data);
+  async create(
+    data: { title: string; content: string; tags: string[] },
+    userId: number,
+  ): Promise<Note> {
+    return this.repository.create(data, userId);
   }
 
-  async update(id: number, data: Partial<Note>): Promise<Note> {
+  async update(id: number, data: Partial<Note>, userId: number): Promise<Note> {
+    const note = await this.repository.findById(id);
+    if (!note || note.userId !== userId) throw new ForbiddenException('No puedes modificar esta nota');
     return this.repository.update(id, data);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, userId: number): Promise<void> {
+    const note = await this.repository.findById(id);
+    if (!note || note.userId !== userId) throw new ForbiddenException('No puedes eliminar esta nota');
     return this.repository.delete(id);
   }
 }

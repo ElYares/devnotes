@@ -1,29 +1,34 @@
 import { Injectable } from '@nestjs/common';
-
-import { Note } from '../domain/note.entity';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Note } from '../domain/note.entity';
+import { Prisma } from '@prisma/client';
 
-/**
- * Repositorio de acceso a datos para las notas.
- * Usa Prisma ORM para comunicarse con PostgreSQL.
- */
+
 @Injectable()
 export class NoteRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<Note[]> {
-    return this.prisma.note.findMany();
+  async findAllByUser(userId: number): Promise<Note[]> {
+    return this.prisma.note.findMany({ where: { userId } });
   }
 
   async findById(id: number): Promise<Note | null> {
     return this.prisma.note.findUnique({ where: { id } });
   }
 
-  async create(data: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
-    return this.prisma.note.create({ data });
-  }
-
-  async update(id: number, data: Partial<Note>): Promise<Note> {
+async create(
+  data: { title: string; content: string; tags: string[] },
+  userId: number,
+): Promise<Note> {
+  return this.prisma.note.create({
+    data: {
+      title: data.title,
+      content: data.content,
+      tags: data.tags,
+      user: { connect: { id: userId } }, // 👈 esto es suficiente
+    },
+  });
+}  async update(id: number, data: Partial<Note>): Promise<Note> {
     return this.prisma.note.update({ where: { id }, data });
   }
 
