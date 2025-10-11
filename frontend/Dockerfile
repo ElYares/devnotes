@@ -1,23 +1,29 @@
-# Etapa 1: Build
+# Etapa de build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+
+# Copiamos todo de una vez (para no romper el lockfile actualizado)
 COPY . .
+
+# Instalamos dependencias
+RUN npm ci
+
+# Compilamos la app Next.js (Tailwind 4 se ejecuta automáticamente)
 RUN npm run build
 
-# Etapa 2: Servidor de producción
+# Etapa de ejecución
 FROM node:20-alpine AS runner
 
 WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=3001
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-RUN npm install --omit=dev
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/src/app/globals.css ./src/app/globals.css
 
-EXPOSE 3001
-CMD ["npm", "run", "start"]
+RUN npm ci --omit=dev
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
