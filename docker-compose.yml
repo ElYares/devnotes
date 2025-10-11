@@ -44,6 +44,20 @@ services:
     networks:
       - devhub_net
 
+  frontend:
+    build: ./frontend
+    container_name: devhub_frontend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3000 # 👈 para llamadas al backend
+    depends_on:
+      - backend
+    networks:
+      - devhub_net
+
 volumes:
   postgres_data:
 
